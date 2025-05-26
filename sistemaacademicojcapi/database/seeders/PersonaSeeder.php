@@ -12,7 +12,7 @@ class PersonaSeeder extends Seeder
     {
         $faker = Faker::create('es_PE');
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 400; $i++) {
             Persona::create([
                 'nombres_persona' => $faker->firstName,
                 'apellidos_pat' => $faker->lastName,

@@ -25,6 +25,11 @@ import RegistrarNotaCursoView from '@/views/Notas/RegistrarNotaCursoView.vue'
 
 const routes = [
   {
+    path: '/',
+    name: 'Bienvenida',
+    component: () => import('@/views/BienvenidaView.vue'),
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/pages/LoginView.vue'),
@@ -300,6 +305,28 @@ const routes = [
     meta: {
       requiresAuth: true,
       role: 'admin',
+    },
+  },
+  {
+    path: '/materias/nueva',
+    name: 'CrearMateria',
+    component: () => import('@/views/Materias/CrearMateriaView.vue'),
+    meta: { requiresAuth: true },
+    role: 'admin',
+  },
+  {
+    path: '/materias/editar/:id',
+    name: 'editar-materia',
+    component: () => import('@/views/Materias/EditarMateriaView.vue'),
+    meta: { requiresAuth: true, role: ['admin'] },
+  },
+  {
+    path: '/reportes/seguimiento',
+    name: 'ReporteEstadisticas',
+    component: () => import('@/views/Reportes/ReporteEstadisticasView.vue'),
+    meta: {
+      requiresAuth: true,
+      role: ['admin'],
     },
   },
 ]

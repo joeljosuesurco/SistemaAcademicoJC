@@ -19,6 +19,7 @@ class Materia extends Model
         'sigla_materia',
         //'estado_materia',
         'nivel_educativo_id',
+        'estado', // 👈 ahora editable
     ];
 
     // Relaciones
@@ -46,5 +47,9 @@ class Materia extends Model
     public function nivel_educativo(): BelongsTo
     {
         return $this->belongsTo(NivelEducativo::class, 'nivel_educativo_id');
+    }
+    public function scopeActivas($query)
+    {
+        return $query->where('estado', 'activo');
     }
 }

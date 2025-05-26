@@ -22,6 +22,7 @@ class CursoSeeder extends Seeder
                 'aula_curso' => 'Aula 343',
                 'turno_curso' => 'Tarde',
                 'descripcion' => 'Curso para inicial A',
+                'estado' => 'activo', // 👈 Añadir esto
             ],
             [
                 'grado_curso' => 'SEGUNDO',
@@ -30,6 +31,7 @@ class CursoSeeder extends Seeder
                 'aula_curso' => 'Aula 102',
                 'turno_curso' => 'Mañana',
                 'descripcion' => 'Segundo grado paralelo B',
+                'estado' => 'activo', // 👈 Añadir esto
             ],
             [
                 'grado_curso' => 'TERCERO',
@@ -38,6 +40,7 @@ class CursoSeeder extends Seeder
                 'aula_curso' => 'Aula 305',
                 'turno_curso' => 'Tarde',
                 'descripcion' => 'Curso para tercer año de secundaria',
+                'estado' => 'activo', // 👈 Añadir esto
             ],
         ];
 

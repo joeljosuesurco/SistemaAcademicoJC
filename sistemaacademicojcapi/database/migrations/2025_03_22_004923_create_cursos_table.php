@@ -22,6 +22,7 @@ return new class extends Migration {
             $table->string('aula_curso', 50);          // Ej: "Aula 101"
             $table->string('turno_curso', 20);         // Ej: "Mañana", "Tarde", "Noche"
             $table->text('descripcion')->nullable();   // Opcional
+            $table->string('estado')->default('activo'); // Aquí mismo
         });
     }
 

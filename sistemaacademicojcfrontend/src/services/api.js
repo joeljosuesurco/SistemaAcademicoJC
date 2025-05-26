@@ -1,4 +1,5 @@
 import axios from 'axios'
+import router from '@/router' // importa el router para navegación SPA
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -22,7 +23,7 @@ api.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem('token')
       delete api.defaults.headers.common['Authorization']
-      window.location.href = '/login' // importante: usa hash si usas HashHistory: '/#/login'
+      router.push('/login') // ✅ navegación SPA sin recarga
     }
 
     if (status >= 500) {

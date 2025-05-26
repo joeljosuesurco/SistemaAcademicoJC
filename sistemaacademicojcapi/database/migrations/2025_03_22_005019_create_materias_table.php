@@ -17,6 +17,7 @@ return new class extends Migration {
             //$table->string('estado_materia', 50);
 
             $table->unsignedBigInteger('nivel_educativo_id');
+            $table->string('estado')->default('activo');
             $table->foreign('nivel_educativo_id')
                   ->references('id')->on('nivel_educativos')
                   ->onDelete('cascade');

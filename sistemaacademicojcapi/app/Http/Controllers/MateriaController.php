@@ -9,11 +9,13 @@ class MateriaController extends Controller
 {
     public function index()
     {
-        $materias = Materia::with('nivel_educativo')->get();
+        $materias = Materia::where('estado', 'activo') // ✅ solo activas por defecto
+            ->with('nivel_educativo')
+            ->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Lista de materias',
+            'message' => 'Lista de materias activas',
             'data' => $materias
         ], 200);
     }
@@ -105,11 +107,12 @@ class MateriaController extends Controller
             'data' => null
         ], 200);
     }
-    ////JOEL ESTE ES FILTRADO POR NIVEL ES LO QUE NO DABA
+
     public function porNivel($nivel_id)
     {
         $materias = Materia::with('nivel_educativo')
             ->where('nivel_educativo_id', $nivel_id)
+            ->where('estado', 'activo') // también solo activas aquí
             ->get();
 
         return response()->json([
@@ -118,4 +121,44 @@ class MateriaController extends Controller
             'data' => $materias
         ], 200);
     }
+
+    // ✅ Inhabilitar una materia
+    public function inhabilitar($id)
+    {
+        $materia = Materia::findOrFail($id);
+        $materia->estado = 'inactivo';
+        $materia->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Materia inhabilitada correctamente.',
+            'data' => $materia,
+        ], 200);
+    }
+
+    // ✅ Reactivar una materia
+    public function reactivar($id)
+    {
+        $materia = Materia::findOrFail($id);
+        $materia->estado = 'activo';
+        $materia->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Materia reactivada correctamente.',
+            'data' => $materia,
+        ], 200);
+    }
+
+    public function indexAdmin()
+    {
+        $materias = Materia::with('nivel_educativo')->get(); // incluye activas e inactivas
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lista completa de materias',
+            'data' => $materias
+        ], 200);
+    }
+
 }

@@ -11,6 +11,9 @@ const mensaje = ref('')
 const error = ref('')
 const previewUrl = ref(null)
 
+const mostrarModalActualizar = ref(false)
+const mensajeExito = ref('')
+
 const form = reactive({
   persona: {},
   documento: {},
@@ -72,13 +75,17 @@ const onFotoChange = (event) => {
   }
 }
 
-const actualizarPadre = async () => {
+const confirmarActualizarPadre = async () => {
   if (!padreSeleccionado.value) return
   try {
     const formData = new FormData()
 
     for (const [key, value] of Object.entries(form.persona)) {
-      if (value !== null && value !== undefined) {
+      if (key === 'fotografia_persona') {
+        if (value instanceof File) {
+          formData.append(`persona[${key}]`, value)
+        }
+      } else if (value !== null && value !== undefined) {
         formData.append(`persona[${key}]`, value)
       }
     }
@@ -91,17 +98,20 @@ const actualizarPadre = async () => {
       formData.append(`padre[${key}]`, value)
     }
 
-    const res = await api.post(`/actualizar-padre/${padreSeleccionado.value.id_padre}`, formData, {
+    await api.post(`/actualizar-padre/${padreSeleccionado.value.id_padre}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    mensaje.value = res.data.message
+    mensaje.value = ''
     error.value = ''
+    mensajeExito.value = 'Datos del padre modificados correctamente.'
     cargarPadres()
   } catch (err) {
     console.error(err)
     error.value = err.response?.data?.message || 'Error al actualizar padre'
     mensaje.value = ''
+  } finally {
+    mostrarModalActualizar.value = false
   }
 }
 </script>
@@ -183,10 +193,10 @@ const actualizarPadre = async () => {
               </div>
               <div>
                 <label class="block text-sm font-medium">Sexo</label>
-                <input
-                  v-model="form.persona.sexo_persona"
-                  class="w-full px-4 py-2 border rounded"
-                />
+                <select v-model="form.persona.sexo_persona" class="w-full px-4 py-2 border rounded">
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                </select>
               </div>
               <div>
                 <label class="block text-sm font-medium">Fecha de Nacimiento</label>
@@ -257,7 +267,10 @@ const actualizarPadre = async () => {
             <div class="grid md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium">Estado</label>
-                <input v-model="form.padre.estado_padre" class="w-full px-4 py-2 border rounded" />
+                <select v-model="form.padre.estado_padre" class="w-full px-4 py-2 border rounded">
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
               </div>
               <div>
                 <label class="block text-sm font-medium">Profesión</label>
@@ -269,13 +282,58 @@ const actualizarPadre = async () => {
             </div>
 
             <div class="flex gap-4">
-              <BaseButton label="Guardar cambios" color="success" @click="actualizarPadre" />
+              <BaseButton
+                label="Guardar cambios"
+                color="success"
+                @click="mostrarModalActualizar = true"
+              />
               <BaseButton label="Cancelar" color="secondary" @click="padreSeleccionado = null" />
             </div>
 
             <div v-if="mensaje" class="text-green-600">{{ mensaje }}</div>
             <div v-if="error" class="text-red-600">{{ error }}</div>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Confirmar actualización -->
+    <div
+      v-if="mostrarModalActualizar"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4">
+        <h2 class="text-lg font-bold text-blue-700">¿Desea modificar los datos del padre?</h2>
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+            @click="mostrarModalActualizar = false"
+            class="px-4 py-2 text-sm text-gray-700 border rounded hover:bg-gray-100"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="confirmarActualizarPadre"
+            class="px-4 py-2 text-sm text-white bg-blue-600 rounded"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Éxito -->
+    <div
+      v-if="mensajeExito"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4 text-center">
+        <h2 class="text-lg font-bold text-green-700">Éxito</h2>
+        <p class="text-gray-700">{{ mensajeExito }}</p>
+        <div class="flex justify-center mt-4">
+          <button
+            @click="mensajeExito = ''"
+            class="px-4 py-2 text-sm text-white bg-green-600 rounded"
+          >
+            Aceptar
+          </button>
         </div>
       </div>
     </div>

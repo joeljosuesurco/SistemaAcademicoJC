@@ -6,9 +6,11 @@ use App\Models\Persona;
 use App\Models\Documento;
 use App\Models\PersonaRol;
 use App\Models\Profesor;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
 
 class InscripcionProfesorController extends Controller
 {
@@ -23,7 +25,7 @@ class InscripcionProfesorController extends Controller
             'persona.nacionalidad_persona' => 'required|string|max:100',
             'persona.direccion_persona' => 'nullable|string|max:200',
             'persona.celular_persona' => 'nullable|string|max:20',
-            'persona.fotografia_persona' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // ✅ ahora es archivo
+            'persona.fotografia_persona' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
 
             'documento.carnet_identidad' => 'required|string|max:20|unique:documentos,carnet_identidad',
             'documento.certificado_nacimiento' => 'nullable|string|max:100',
@@ -47,7 +49,7 @@ class InscripcionProfesorController extends Controller
 
             $personaData = $request->input('persona');
 
-            // 📷 Procesar fotografía si se envía
+            // Procesar fotografía
             if (
                 $request->hasFile('persona.fotografia_persona') &&
                 $request->file('persona.fotografia_persona')->isValid()
@@ -60,26 +62,47 @@ class InscripcionProfesorController extends Controller
 
             $persona = Persona::create($personaData);
 
+            // Documento
             $documento = new Documento($request->input('documento'));
             $documento->personas_id_persona = $persona->id_persona;
             $documento->save();
 
+            // PersonaRol (profesor)
             $personaRol = PersonaRol::create([
                 'personas_id_persona' => $persona->id_persona,
                 'roles_id_rol' => 2, // ID del rol 'profesor'
             ]);
 
+            // Profesor
             $profesorData = $request->input('profesor');
             $profesorData['persona_rol_id_persona_rol'] = $personaRol->id_persona_rol;
-
             $profesor = Profesor::create($profesorData);
+
+            // Crear usuario automáticamente
+            $baseUsername = strtolower(
+                preg_replace('/\s+/', '', $persona->nombres_persona . $persona->apellidos_pat)
+            );
+            $username = $baseUsername;
+            $contador = 1;
+
+            while (User::where('name_user', $username)->exists()) {
+                $username = $baseUsername . $contador;
+                $contador++;
+            }
+
+            User::create([
+                'name_user' => $username,
+                'password' => Hash::make('admin123'),
+                'state_user' => 'activo',
+                'persona_rol_id_persona_rol' => $personaRol->id_persona_rol,
+            ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Profesor registrado correctamente.',
-                'data' => $profesor,
+                'usuario_generado' => $username,
             ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();

@@ -9,6 +9,12 @@ use App\Models\Nota;
 use App\Models\DimensionNota;
 use App\Models\Seguimiento;
 
+use App\Models\Persona;
+use App\Models\Rol;
+use App\Models\PersonaRol;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
@@ -49,5 +55,48 @@ class DatabaseSeeder extends Seeder
             NotificacionSeeder::class,
             NotificacionUsuarioSeeder::class,
         ]);
+
+                $roles = [
+                'administrativo' => ['nombre' => 'Administrador', 'username' => 'admin'],
+                'profesor'       => ['nombre' => 'Pedro', 'username' => 'profesor'],
+                'estudiante'     => ['nombre' => 'Esteban', 'username' => 'estudiante'],
+                'padre'          => ['nombre' => 'Pablo', 'username' => 'padre'],
+                ];
+
+
+        echo "\n=== USUARIOS CREADOS ===\n";
+
+        foreach ($roles as $rolNombre => $data) {
+            $persona = Persona::create([
+                'nombres_persona' => $data['nombre'],
+                'apellidos_pat' => ucfirst($rolNombre),
+                'apellidos_mat' => '',
+                'sexo_persona' => 'Masculino',
+                'fecha_nacimiento' => '1990-01-01',
+                'direccion_persona' => 'Zona Central',
+                'nacionalidad_persona' => 'Boliviana',
+                'celular_persona' => '7' . rand(1000000, 9999999),
+                'fotografia_persona' => null,
+            ]);
+
+            $rol = Rol::where('nombre', $rolNombre)->first();
+            if (!$rol) continue;
+
+            $personaRol = PersonaRol::create([
+                'roles_id_rol' => $rol->id_rol,
+                'personas_id_persona' => $persona->id_persona,
+            ]);
+
+            $usuario = User::create([
+                'name_user' => $data['username'],
+                'password' => Hash::make('1234'),
+                'state_user' => 'activo',
+                'persona_rol_id_persona_rol' => $personaRol->id_persona_rol,
+            ]);
+
+            echo "Usuario: {$usuario->name_user} | Rol: $rolNombre | Contraseña: 1234\n";
+        }
+        echo "========================\n";
     }
+
 }

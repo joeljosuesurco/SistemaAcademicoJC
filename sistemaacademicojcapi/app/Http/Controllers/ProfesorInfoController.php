@@ -9,11 +9,14 @@ class ProfesorInfoController extends Controller
 {
     public function index(): JsonResponse
     {
-        $profesores = Profesor::with('persona_rol.persona.documento')->get();
+        // Solo profesores activos
+        $profesores = Profesor::activos()
+            ->with('persona_rol.persona.documento')
+            ->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Lista de profesores',
+            'message' => 'Lista de profesores activos',
             'data' => $profesores
         ]);
     }

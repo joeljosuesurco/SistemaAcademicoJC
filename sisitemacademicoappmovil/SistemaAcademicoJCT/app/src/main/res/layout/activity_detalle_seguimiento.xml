@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- 🟦 Materia -->
+        <TextView
+            android:id="@+id/txtMateria"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Materia:"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <!-- 📆 Fecha -->
+        <TextView
+            android:id="@+id/txtFecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fecha:"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- 📊 Radar Chart -->
+        <com.anychart.AnyChartView
+            android:id="@+id/any_chart_view"
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- 📝 Observación -->
+        <TextView
+            android:text="📝 Observación del Profesor:"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp"
+            android:textColor="#333333" />
+
+        <TextView
+            android:id="@+id/txtObservacion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="(observación aquí)"
+            android:textSize="15sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="#555555"
+            android:background="#f2f2f2"
+            android:padding="12dp"
+            android:layout_marginBottom="32dp" />
+    </LinearLayout>
+</ScrollView>

@@ -11,6 +11,12 @@ const mensaje = ref('')
 const error = ref('')
 const previewEditUrl = ref(null)
 
+const mostrarModalEstado = ref(false)
+const accionEstado = ref('') // 'inhabilitar' o 'rehabilitar'
+const mensajeExito = ref('')
+
+const mostrarModalActualizar = ref(false)
+
 const onFotoEditChange = (event) => {
   const file = event.target.files[0]
   if (file && file.type.startsWith('image/')) {
@@ -78,30 +84,31 @@ const seleccionarEstudiante = (est) => {
 const estadoCurso = computed(() => cursoVisibleDe(estudianteSeleccionado.value)?.estado || null)
 const esInscrito = computed(() => estadoCurso.value === 'inscrito')
 
-const actualizarEstudiante = async () => {
+const confirmarActualizarEstudiante = async () => {
   if (!estudianteSeleccionado.value) return
 
   try {
     const formData = new FormData()
 
-    // 📦 Agregar persona (incluye foto si está presente)
     for (const [key, value] of Object.entries(form.persona)) {
-      if (value !== undefined && value !== null) {
+      if (key === 'fotografia_persona') {
+        if (value instanceof File) {
+          formData.append(`persona[${key}]`, value)
+        }
+      } else if (value !== undefined && value !== null) {
         formData.append(`persona[${key}]`, value)
       }
     }
 
-    // 📎 Documentos
     for (const [key, value] of Object.entries(form.documento)) {
       formData.append(`documento[${key}]`, value)
     }
 
-    // 🎓 Estudiante
     for (const [key, value] of Object.entries(form.estudiante)) {
       formData.append(`estudiante[${key}]`, value)
     }
 
-    const res = await api.post(
+    await api.post(
       `/actualizar-estudiante/${estudianteSeleccionado.value.id_estudiante}`,
       formData,
       {
@@ -111,23 +118,20 @@ const actualizarEstudiante = async () => {
       },
     )
 
-    mensaje.value = res.data.message
     error.value = ''
+    mensajeExito.value = 'Datos del estudiante modificados correctamente.'
     cargarEstudiantes()
   } catch (err) {
     console.error(err)
     error.value = err.response?.data?.message || 'Error al actualizar estudiante'
     mensaje.value = ''
+  } finally {
+    mostrarModalActualizar.value = false
   }
 }
 
-const alternarEstadoInscripcion = async () => {
+const confirmarCambioEstado = async () => {
   if (!form.curso_id || !form.gestion_id) return
-
-  if (
-    !confirm(`¿Estás seguro de ${esInscrito.value ? 'inhabilitar' : 'rehabilitar'} al estudiante?`)
-  )
-    return
 
   const payload = {
     persona: form.persona,
@@ -140,18 +144,22 @@ const alternarEstadoInscripcion = async () => {
   }
 
   try {
-    const res = await api.put(
-      `/actualizar-estudiante/${estudianteSeleccionado.value.id_estudiante}`,
-      payload,
-    )
-    mensaje.value = res.data.message
+    await api.put(`/actualizar-estudiante/${estudianteSeleccionado.value.id_estudiante}`, payload)
+    mensaje.value = ''
     error.value = ''
+    mensajeExito.value =
+      accionEstado.value === 'inhabilitar'
+        ? 'Estudiante inhabilitado correctamente.'
+        : 'Estudiante rehabilitado correctamente.'
+
     estudianteSeleccionado.value = null
     cargarEstudiantes()
   } catch (err) {
     console.error(err)
     error.value = 'No se pudo actualizar el estado de inscripción'
     mensaje.value = ''
+  } finally {
+    mostrarModalEstado.value = false
   }
 }
 
@@ -167,6 +175,12 @@ const estudiantesFiltrados = computed(() => {
     )
   })
 })
+
+const abrirModalEstado = () => {
+  if (!form.curso_id || !form.gestion_id) return
+  accionEstado.value = esInscrito.value ? 'inhabilitar' : 'rehabilitar'
+  mostrarModalEstado.value = true
+}
 </script>
 
 <template>
@@ -269,11 +283,10 @@ const estudiantesFiltrados = computed(() => {
 
               <div>
                 <label class="block text-sm font-medium mb-1">Sexo</label>
-                <input
-                  v-model="form.persona.sexo_persona"
-                  placeholder="Sexo"
-                  class="px-4 py-2 border rounded w-full"
-                />
+                <select v-model="form.persona.sexo_persona" class="px-4 py-2 border rounded w-full">
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                </select>
               </div>
 
               <div>
@@ -385,12 +398,16 @@ const estudiantesFiltrados = computed(() => {
 
             <!-- Botones -->
             <div class="flex gap-4">
-              <BaseButton label="Guardar cambios" color="success" @click="actualizarEstudiante" />
+              <BaseButton
+                label="Guardar cambios"
+                color="success"
+                @click="mostrarModalActualizar = true"
+              />
               <BaseButton
                 v-if="estadoCurso"
                 :label="esInscrito ? 'Inhabilitar' : 'Rehabilitar'"
                 :color="esInscrito ? 'danger' : 'info'"
-                @click="alternarEstadoInscripcion"
+                @click="abrirModalEstado"
               />
               <BaseButton
                 label="Cancelar"
@@ -402,6 +419,72 @@ const estudiantesFiltrados = computed(() => {
             <div v-if="mensaje" class="text-green-600">{{ mensaje }}</div>
             <div v-if="error" class="text-red-600">{{ error }}</div>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Confirmar acción -->
+    <div
+      v-if="mostrarModalEstado"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4">
+        <h2 class="text-lg font-bold text-red-700">
+          ¿Desea {{ accionEstado === 'inhabilitar' ? 'inhabilitar' : 'rehabilitar' }} al estudiante?
+        </h2>
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+            @click="mostrarModalEstado = false"
+            class="px-4 py-2 text-sm text-gray-700 border rounded hover:bg-gray-100"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="confirmarCambioEstado"
+            class="px-4 py-2 text-sm text-white bg-red-600 rounded"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Éxito -->
+    <div
+      v-if="mensajeExito"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4 text-center">
+        <h2 class="text-lg font-bold text-green-700">Éxito</h2>
+        <p class="text-gray-700">{{ mensajeExito }}</p>
+        <div class="flex justify-center mt-4">
+          <button
+            @click="mensajeExito = ''"
+            class="px-4 py-2 text-sm text-white bg-green-600 rounded"
+          >
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Confirmar actualización -->
+    <div
+      v-if="mostrarModalActualizar"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4">
+        <h2 class="text-lg font-bold text-blue-700">¿Desea modificar los datos del estudiante?</h2>
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+            @click="mostrarModalActualizar = false"
+            class="px-4 py-2 text-sm text-gray-700 border rounded hover:bg-gray-100"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="confirmarActualizarEstudiante"
+            class="px-4 py-2 text-sm text-white bg-blue-600 rounded"
+          >
+            Confirmar
+          </button>
         </div>
       </div>
     </div>

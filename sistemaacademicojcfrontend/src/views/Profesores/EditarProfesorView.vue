@@ -12,6 +12,14 @@ const cargando = ref(true)
 const busqueda = ref('')
 const previewEditUrl = ref(null)
 
+const mostrarModalEstado = ref(false)
+const accionEstado = ref('') // 'inhabilitar' o 'reactivar'
+
+const mensajeExito = ref('')
+
+const mostrarModalActualizar = ref(false)
+const mensajeExitoActualizar = ref('')
+
 const form = reactive({
   persona: {},
   documento: {},
@@ -20,7 +28,7 @@ const form = reactive({
 
 const cargarProfesores = async () => {
   try {
-    const res = await api.get('/info/profesores')
+    const res = await api.get('/admin/profesores-completo')
     profesores.value = res.data.data.map((prof) => {
       const persona = prof.persona_rol?.persona || {}
       const documento = persona.documento || {}
@@ -85,14 +93,18 @@ const onFotoEditChange = (event) => {
   }
 }
 
-const actualizarProfesor = async () => {
+const confirmarActualizarProfesor = async () => {
   if (!profesorSeleccionado.value) return
 
   try {
     const formData = new FormData()
 
     for (const [key, value] of Object.entries(form.persona)) {
-      if (value !== null && value !== undefined) {
+      if (key === 'fotografia_persona') {
+        if (value instanceof File) {
+          formData.append(`persona[${key}]`, value)
+        }
+      } else if (value !== null && value !== undefined) {
         formData.append(`persona[${key}]`, value)
       }
     }
@@ -105,24 +117,63 @@ const actualizarProfesor = async () => {
       formData.append(`profesor[${key}]`, value)
     }
 
-    const res = await api.post(
-      `/actualizar-profesor/${profesorSeleccionado.value.id_profesor}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+    await api.post(`/actualizar-profesor/${profesorSeleccionado.value.id_profesor}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
       },
-    )
+    })
 
-    mensaje.value = res.data.message
     error.value = ''
+    mensajeExitoActualizar.value = 'Datos del profesor modificados correctamente.'
     cargarProfesores()
   } catch (err) {
-    console.error('🔴 Error completo:', err.response?.data)
+    console.error('🔴 Error al actualizar:', err.response?.data)
     error.value = err.response?.data?.message || 'Error al actualizar profesor'
-    mensaje.value = ''
+  } finally {
+    mostrarModalActualizar.value = false
   }
+}
+
+const confirmarCambioEstado = async () => {
+  if (!profesorSeleccionado.value) return
+
+  const id = profesorSeleccionado.value.id_profesor
+  const endpoint =
+    accionEstado.value === 'inhabilitar'
+      ? `/profesores/${id}/inhabilitar`
+      : `/profesores/${id}/reactivar`
+
+  try {
+    await api.put(endpoint)
+    mensaje.value = ''
+    error.value = ''
+    mensajeExito.value =
+      accionEstado.value === 'inhabilitar'
+        ? 'Profesor inhabilitado correctamente.'
+        : 'Profesor reactivado correctamente.'
+
+    // Actualizar visualmente
+    const nuevoEstado = accionEstado.value === 'inhabilitar' ? 'inactivo' : 'activo'
+    profesorSeleccionado.value.estado_profesor = nuevoEstado
+
+    const index = profesores.value.findIndex((p) => p.id_profesor === id)
+    if (index !== -1) {
+      profesores.value[index].estado_profesor = nuevoEstado
+    }
+  } catch (err) {
+    console.error('❌ Error al cambiar estado del profesor:', err)
+    error.value = err.response?.data?.message || 'Error al cambiar estado del profesor'
+    mensaje.value = ''
+  } finally {
+    mostrarModalEstado.value = false
+  }
+}
+
+const abrirModalEstado = () => {
+  if (!profesorSeleccionado.value) return
+  accionEstado.value =
+    profesorSeleccionado.value.estado_profesor === 'activo' ? 'inhabilitar' : 'reactivar'
+  mostrarModalEstado.value = true
 }
 
 onMounted(() => {
@@ -155,6 +206,8 @@ onMounted(() => {
                 <tr>
                   <th class="px-4 py-2 text-left">Nombre completo</th>
                   <th class="px-4 py-2 text-left">Especialidad</th>
+                  <th class="px-4 py-2 text-left">Estado</th>
+                  <!-- 👈 nuevo -->
                 </tr>
               </thead>
               <tbody>
@@ -174,6 +227,13 @@ onMounted(() => {
                   </td>
                   <td class="px-4 py-2">
                     {{ prof.profesor?.especialidad_profesor || prof.especialidad_profesor }}
+                  </td>
+                  <td class="px-4 py-2">
+                    <span
+                      :class="prof.estado_profesor === 'activo' ? 'text-green-600' : 'text-red-600'"
+                    >
+                      {{ prof.estado_profesor }}
+                    </span>
                   </td>
                 </tr>
               </tbody>
@@ -215,10 +275,10 @@ onMounted(() => {
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Sexo</label>
-                <input
-                  v-model="form.persona.sexo_persona"
-                  class="px-4 py-2 border rounded w-full"
-                />
+                <select v-model="form.persona.sexo_persona" class="px-4 py-2 border rounded w-full">
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                </select>
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Fecha de nacimiento</label>
@@ -320,13 +380,108 @@ onMounted(() => {
             </div>
 
             <div class="flex gap-4">
-              <BaseButton label="Guardar Cambios" color="success" @click="actualizarProfesor" />
+              <BaseButton
+                label="Guardar Cambios"
+                color="success"
+                @click="mostrarModalActualizar = true"
+              />
               <BaseButton label="Cancelar" color="secondary" @click="profesorSeleccionado = null" />
+              <BaseButton
+                :label="
+                  profesorSeleccionado.estado_profesor === 'activo' ? 'Inhabilitar' : 'Reactivar'
+                "
+                :color="profesorSeleccionado.estado_profesor === 'activo' ? 'danger' : 'warning'"
+                @click="abrirModalEstado"
+              />
             </div>
 
             <div v-if="mensaje" class="text-green-600">{{ mensaje }}</div>
             <div v-if="error" class="text-red-600">{{ error }}</div>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Confirmar inhabilitar/reactivar -->
+    <div
+      v-if="mostrarModalEstado"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4">
+        <h2 class="text-lg font-bold text-red-700">
+          ¿Desea {{ accionEstado === 'inhabilitar' ? 'inhabilitar' : 'reactivar' }} al profesor?
+        </h2>
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+            @click="mostrarModalEstado = false"
+            class="px-4 py-2 text-sm text-gray-700 border rounded hover:bg-gray-100"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="confirmarCambioEstado"
+            class="px-4 py-2 text-sm text-white bg-red-600 rounded"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Mensaje de éxito -->
+    <div
+      v-if="mensajeExito"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4 text-center">
+        <h2 class="text-lg font-bold text-green-700">Éxito</h2>
+        <p class="text-gray-700">{{ mensajeExito }}</p>
+        <div class="flex justify-center mt-4">
+          <button
+            @click="mensajeExito = ''"
+            class="px-4 py-2 text-sm text-white bg-green-600 rounded"
+          >
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Confirmar modificación -->
+    <div
+      v-if="mostrarModalActualizar"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4">
+        <h2 class="text-lg font-bold text-blue-700">¿Desea modificar los datos del profesor?</h2>
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+            @click="mostrarModalActualizar = false"
+            class="px-4 py-2 text-sm text-gray-700 border rounded hover:bg-gray-100"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="confirmarActualizarProfesor"
+            class="px-4 py-2 text-sm text-white bg-blue-600 rounded"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Modal: Éxito al modificar -->
+    <div
+      v-if="mensajeExitoActualizar"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4 text-center">
+        <h2 class="text-lg font-bold text-green-700">Éxito</h2>
+        <p class="text-gray-700">{{ mensajeExitoActualizar }}</p>
+        <div class="flex justify-center mt-4">
+          <button
+            @click="mensajeExitoActualizar = ''"
+            class="px-4 py-2 text-sm text-white bg-green-600 rounded"
+          >
+            Aceptar
+          </button>
         </div>
       </div>
     </div>

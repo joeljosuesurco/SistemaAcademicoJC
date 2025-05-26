@@ -1,0 +1,37 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#F9F9F9"
+    android:layout_marginBottom="12dp">
+
+    <TextView
+        android:id="@+id/txtMateria"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp">
+
+        <TextView android:id="@+id/txtSer" style="@style/NotaItem" android:text="0" />
+        <TextView android:id="@+id/txtSaber" style="@style/NotaItem" android:text="0" />
+        <TextView android:id="@+id/txtHacer" style="@style/NotaItem" android:text="0" />
+        <TextView android:id="@+id/txtDecidir" style="@style/NotaItem" android:text="0" />
+        <TextView android:id="@+id/txtAutoSer" style="@style/NotaItem" android:text="0" />
+        <TextView android:id="@+id/txtAutoDecidir" style="@style/NotaItem" android:text="0" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/txtNotaFinal"
+        android:text="Nota Final: "
+        android:layout_marginTop="6dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#222" />
+</LinearLayout>

@@ -50,7 +50,14 @@ export function getMenuAside() {
       {
         label: 'Materias',
         icon: mdiBookOpenPageVariant,
-        menu: [{ label: 'Listado de Materias', to: '/materias' }],
+        menu: [
+          { label: 'Listado de Materias', to: '/materias' },
+          { label: 'Registrar Materia', to: '/materias/nueva' }, // 👈 nuevo ítem
+          {
+            label: 'Editar materia',
+            to: '/materias/editar/:id',
+          },
+        ],
       },
       {
         label: 'Cursos',
@@ -95,6 +102,11 @@ export function getMenuAside() {
           { label: 'Enviar Comunicado', to: '/comunicados/crear' },
           { label: 'Lista Comunicados', to: '/comunicados' },
         ],
+      },
+      {
+        label: 'Reportes',
+        icon: mdiAccountTie,
+        to: '/reportes/seguimiento',
       },
       {
         label: 'Control de Usuarios',

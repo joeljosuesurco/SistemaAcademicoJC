@@ -3,6 +3,10 @@ import { ref, reactive } from 'vue'
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import api from '@/services/api'
+import CardBoxModal from '@/components/CardBoxModal.vue'
+
+const modalConfirmacion = ref(false)
+const datosUsuarioGenerado = ref({ usuario: '', password: 'admin123' })
 
 const previewUrl = ref(null)
 
@@ -55,6 +59,11 @@ const registrarPadre = async () => {
 
     mensaje.value = res.data.message
     error.value = ''
+
+    // ✅ Capturar usuario y mostrar modal
+    datosUsuarioGenerado.value.usuario = res.data.usuario_generado || 'usuario'
+    modalConfirmacion.value = true
+
     resetForm()
   } catch (err) {
     console.error(err)
@@ -228,5 +237,20 @@ const onFotoChange = (event) => {
         <div v-if="error" class="text-red-600">{{ error }}</div>
       </form>
     </div>
+    <CardBoxModal
+      v-model="modalConfirmacion"
+      title="PADRE REGISTRADO EXITOSAMENTE"
+      :hide-footer="true"
+    >
+      <p class="mb-2">
+        Usuario generado: <strong>{{ datosUsuarioGenerado.usuario }}</strong>
+      </p>
+      <p>
+        Contraseña predeterminada: <strong>{{ datosUsuarioGenerado.password }}</strong>
+      </p>
+      <div class="mt-4 flex justify-end">
+        <BaseButton color="primary" label="Aceptar" @click="modalConfirmacion = false" />
+      </div>
+    </CardBoxModal>
   </LayoutAuthenticated>
 </template>

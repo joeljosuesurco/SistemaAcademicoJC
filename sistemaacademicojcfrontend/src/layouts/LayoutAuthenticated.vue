@@ -33,6 +33,7 @@ const accesoPorRol = {
     'Padres de Familia',
     'Comunicados',
     'Control de Usuarios',
+    'Reportes',
   ],
   profesor: [
     'Menú Principal',

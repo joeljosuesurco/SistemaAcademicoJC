@@ -18,9 +18,20 @@ const pageSize = 10
 onMounted(async () => {
   try {
     const res = await api.get('/materias')
-    materias.value = (res.data.data || []).sort((a, b) =>
-      a.sigla_materia.localeCompare(b.sigla_materia),
-    )
+
+    const ordenNivel = {
+      INICIAL: 1,
+      PRIMARIA: 2,
+      SECUNDARIA: 3,
+    }
+
+    materias.value = (res.data.data || []).sort((a, b) => {
+      const nivelA = ordenNivel[a.nivel_educativo?.codigo] || 99
+      const nivelB = ordenNivel[b.nivel_educativo?.codigo] || 99
+
+      if (nivelA !== nivelB) return nivelA - nivelB
+      return a.sigla_materia.localeCompare(b.sigla_materia)
+    })
   } catch (err) {
     error.value = 'No se pudo cargar la lista de materias'
     console.error(err)

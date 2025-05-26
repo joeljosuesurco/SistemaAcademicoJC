@@ -3,6 +3,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import api from '@/services/api'
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
 import BaseButton from '@/components/BaseButton.vue'
+import CardBoxModal from '@/components/CardBoxModal.vue'
 
 const form = ref({
   grado_curso: '',
@@ -20,9 +21,15 @@ const cursoCreado = ref(null)
 
 const grados = ['PRIMERO', 'SEGUNDO', 'TERCERO', 'CUARTO', 'QUINTO', 'SEXTO']
 const paralelos = ['A', 'B', 'C', 'D']
-const turnos = ['MAÑANA', 'TARDE', 'NOCHE']
+const turnos = ['MAÑANA', 'TARDE']
 
 const vistaPreviaCurso = ref(null)
+const modalVisible = ref(false)
+
+const modalAdvertencia = ref(false)
+const mensajeAdvertencia = ref('')
+
+const cursoDuplicadoActivo = ref(false)
 
 watch(
   () => [form.value.grado_curso, form.value.paralelo_curso, form.value.nivel_educativo_id],
@@ -57,15 +64,6 @@ const cursosSimilares = computed(() => {
   )
 })
 
-const cursoDuplicado = computed(() => {
-  return cursosRecientes.value.find(
-    (curso) =>
-      curso.grado_curso === form.value.grado_curso &&
-      curso.paralelo_curso === form.value.paralelo_curso &&
-      curso.nivel_educativo_id === form.value.nivel_educativo_id,
-  )
-})
-
 const cargarCursos = async () => {
   try {
     const res = await api.get('/cursos')
@@ -86,9 +84,9 @@ const enviarFormulario = async () => {
   try {
     const res = await api.post('/cursos', form.value)
     mensaje.value = 'Curso creado correctamente.'
-
-    cursosRecientes.value.unshift(res.data.data)
     cursoCreado.value = res.data.data
+    cursosRecientes.value.unshift(res.data.data)
+    modalVisible.value = true // 👈 Mostrar modal
 
     form.value = {
       grado_curso: '',
@@ -102,6 +100,9 @@ const enviarFormulario = async () => {
   } catch (error) {
     if (error.response?.status === 422) {
       errores.value = error.response.data.errors
+    } else if (error.response?.status === 409) {
+      mensajeAdvertencia.value = error.response.data.message
+      modalAdvertencia.value = true
     } else {
       mensaje.value = 'Ocurrió un error al crear el curso.'
     }
@@ -122,6 +123,34 @@ const cancelar = () => {
   mensaje.value = null
   cursoCreado.value = null
 }
+
+watch(
+  () => [
+    form.value.grado_curso,
+    form.value.paralelo_curso,
+    form.value.nivel_educativo_id,
+    form.value.turno_curso,
+  ],
+  async ([grado, paralelo, nivelId, turno]) => {
+    if (grado && paralelo && nivelId && turno) {
+      try {
+        const res = await api.get('/cursos') // usa el endpoint con todos los cursos activos
+        cursoDuplicadoActivo.value = res.data.data.some((curso) => {
+          return (
+            curso.grado_curso === grado &&
+            curso.paralelo_curso === paralelo &&
+            curso.nivel_educativo_id === nivelId &&
+            curso.turno_curso === turno
+          )
+        })
+      } catch {
+        cursoDuplicadoActivo.value = false
+      }
+    } else {
+      cursoDuplicadoActivo.value = false
+    }
+  },
+)
 </script>
 
 <template>
@@ -211,6 +240,12 @@ const cancelar = () => {
               <BaseButton type="submit" label="Registrar" color="success" />
               <BaseButton type="button" label="Cancelar" color="default" @click="cancelar" />
             </div>
+            <div
+              v-if="cursoDuplicadoActivo"
+              class="bg-red-100 border border-red-300 text-red-700 p-4 rounded mt-4"
+            >
+              Ya existe un curso activo con este grado, paralelo, nivel educativo y turno.
+            </div>
           </form>
         </div>
 
@@ -220,10 +255,6 @@ const cancelar = () => {
 
           <div v-if="vistaPreviaCurso" class="mb-4 p-3 border rounded bg-blue-50 text-blue-700">
             Curso en preparación: <strong>{{ vistaPreviaCurso }}</strong>
-          </div>
-
-          <div v-if="cursoDuplicado" class="mb-4 p-3 border rounded bg-red-100 text-red-700">
-            Ya existe un curso con este grado, paralelo y nivel.
           </div>
 
           <div v-if="cursosSimilares.length" class="mb-4">
@@ -271,5 +302,22 @@ const cancelar = () => {
         </div>
       </div>
     </div>
+    <CardBoxModal
+      v-model="modalVisible"
+      title="Curso creado exitosamente"
+      button="Aceptar"
+      color="success"
+    >
+      <p>
+        El curso
+        <strong>{{ cursoCreado?.grado_curso }} {{ cursoCreado?.paralelo_curso }}</strong> ha sido
+        registrado correctamente.
+      </p>
+    </CardBoxModal>
+    <CardBoxModal v-model="modalAdvertencia" title="Advertencia" button="Aceptar" color="danger">
+      <p class="text-red-700 font-medium">
+        {{ mensajeAdvertencia }}
+      </p>
+    </CardBoxModal>
   </LayoutAuthenticated>
 </template>

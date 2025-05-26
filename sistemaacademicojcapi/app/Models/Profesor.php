@@ -32,4 +32,9 @@ class Profesor extends Model
     {
         return $this->hasMany(CursoProfesorMateriaGestion::class, 'profesores_id_profesor', 'id_profesor');
     }
+
+    public function scopeActivos($query)
+    {
+        return $query->where('estado_profesor', 'activo');
+    }
 }

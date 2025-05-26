@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="12dp"
+    android:background="@android:color/white">
+
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Spinner + Boleta -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="16dp">
+
+                <!-- Trimestre selector -->
+                <Spinner
+                    android:id="@+id/spinnerTrimestre"
+                    android:layout_width="200dp"
+                    android:layout_height="48dp"
+                    android:padding="8dp"
+                    android:backgroundTint="#B3E5FC"
+                    android:theme="@style/SpinnerTheme"/>/>
+
+                <!-- Ver boleta -->
+                <Button
+                    android:id="@+id/btnVerBoletaFinal"
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:text="📄 Ver Boleta Final"
+                    android:backgroundTint="#388E3C"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginTop="8dp" />
+
+            </LinearLayout>
+
+            <!-- Tabla de notas -->
+            <TableLayout
+                android:id="@+id/tablaNotas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*"
+                android:shrinkColumns="*"
+                android:background="#FFFFFF">
+
+                <!-- Cabecera principal -->
+                <TableRow android:background="#E8F0FE">
+                    <TextView
+                        android:text="MATERIAS"
+                        android:padding="10dp"
+                        android:textStyle="bold"
+                        android:textColor="#1A237E"
+                        android:background="#E8F0FE" />
+                    <TextView
+                        android:text="Evaluación Maestro(a)"
+                        android:padding="10dp"
+                        android:textStyle="bold"
+                        android:layout_span="4"
+                        android:gravity="center"
+                        android:textColor="#1A237E"
+                        android:background="#E8F0FE" />
+                    <TextView
+                        android:text="Autoevaluación"
+                        android:padding="10dp"
+                        android:textStyle="bold"
+                        android:layout_span="2"
+                        android:gravity="center"
+                        android:textColor="#4A148C"
+                        android:background="#F3E5F5" />
+                    <TextView
+                        android:text="Promedio"
+                        android:padding="10dp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1"
+                        android:background="#E3F2FD" />
+                </TableRow>
+
+                <!-- Subcabecera -->
+                <TableRow android:background="#E8F0FE">
+                    <TextView android:text="Dimensiones"
+                        android:padding="10dp"
+                        android:textStyle="bold"
+                        android:textColor="#1A237E"
+                        android:background="#E8F0FE" />
+                    <TextView android:text="Ser"
+                        android:padding="10dp"
+                        android:textColor="#1A237E"
+                        android:textStyle="bold" />
+                    <TextView android:text="Saber"
+                        android:padding="10dp"
+                        android:textColor="#1A237E"
+                        android:textStyle="bold" />
+                    <TextView android:text="Hacer"
+                        android:padding="10dp"
+                        android:textColor="#1A237E"
+                        android:textStyle="bold" />
+                    <TextView android:text="Decidir"
+                        android:padding="10dp"
+                        android:textColor="#1A237E"
+                        android:textStyle="bold" />
+                    <TextView android:text="Ser"
+                        android:padding="10dp"
+                        android:textColor="#4A148C"
+                        android:textStyle="bold" />
+                    <TextView android:text="Decidir"
+                        android:padding="10dp"
+                        android:textColor="#4A148C"
+                        android:textStyle="bold" />
+                    <TextView android:text="Prom."
+                        android:padding="10dp"
+                        android:textColor="#0D47A1"
+                        android:textStyle="bold" />
+                </TableRow>
+
+                <!-- 🔽 Filas dinámicas desde Java -->
+
+            </TableLayout>
+        </LinearLayout>
+    </ScrollView>
+</HorizontalScrollView>

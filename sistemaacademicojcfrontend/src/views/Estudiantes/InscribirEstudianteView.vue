@@ -329,13 +329,16 @@ const onFotoChange = (event) => {
                   class="w-full px-4 py-2 border rounded"
                   required
                 />
-                <input
+                <select
                   v-model="nuevoEstudiante.persona.sexo_persona"
-                  type="text"
-                  placeholder="Sexo"
                   class="w-full px-4 py-2 border rounded"
                   required
-                />
+                >
+                  <option value="">Seleccionar sexo</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                </select>
+
                 <input
                   v-model="nuevoEstudiante.persona.fecha_nacimiento"
                   type="date"

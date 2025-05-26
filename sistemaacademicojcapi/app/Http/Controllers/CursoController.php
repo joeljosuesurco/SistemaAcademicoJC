@@ -6,12 +6,17 @@ use App\Models\Curso;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\CursoEstudianteGestion;
+use App\Models\CursoProfesorMateriaGestion;
+use App\Models\Nota;
+use App\Models\Horario;
 
 class CursoController extends Controller
 {
     public function index()
     {
-        $cursos = Curso::with('nivel_educativo')->get(); // 👈 CAMBIADO
+        $cursos = Curso::where('estado', 'activo')
+                    ->with('nivel_educativo')
+                    ->get();
 
         return response()->json([
             'success' => true,
@@ -19,6 +24,7 @@ class CursoController extends Controller
             'data' => $cursos
         ], 200);
     }
+
 
     public function store(Request $request)
     {
@@ -31,8 +37,23 @@ class CursoController extends Controller
             'descripcion' => 'nullable|string|max:255',
         ]);
 
+        // 🔒 Verificar duplicado por Grado + Paralelo + Nivel + Turno + Activo
+        $existe = Curso::where('grado_curso', $validated['grado_curso'])
+            ->where('paralelo_curso', $validated['paralelo_curso'])
+            ->where('nivel_educativo_id', $validated['nivel_educativo_id'])
+            ->where('turno_curso', $validated['turno_curso'])
+            ->where('estado', 'activo')
+            ->exists();
+
+        if ($existe) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya existe un curso activo con ese grado, paralelo, nivel y turno.',
+            ], 409); // HTTP 409: Conflicto
+        }
+
         $curso = Curso::create($validated);
-        $curso->load('nivel_educativo'); // 👈 CAMBIADO
+        $curso->load('nivel_educativo');
 
         return response()->json([
             'success' => true,
@@ -81,8 +102,47 @@ class CursoController extends Controller
             'descripcion' => 'nullable|string|max:255',
         ]);
 
+        // 🔒 Si el curso tiene inscripciones activas o notas, restringimos
+        $tieneInscripciones = \App\Models\CursoEstudianteGestion::where('cursos_id_curso', $id)
+            ->where('estado', 'inscrito')
+            ->exists();
+
+        $tieneNotas = \App\Models\Nota::where('cursos_id_curso', $id)->exists();
+
+        if ($tieneInscripciones || $tieneNotas) {
+            $curso->update([
+                'aula_curso' => $validated['aula_curso'],
+                'descripcion' => $validated['descripcion'],
+            ]);
+
+            $curso->load('nivel_educativo');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Solo se actualizó aula y descripción del curso, ya que tiene inscripciones activas o notas.',
+                'data' => $curso,
+            ]);
+        }
+
+        // Validar duplicado solo si se pueden editar todos los campos
+        $existe = Curso::where('grado_curso', $validated['grado_curso'])
+            ->where('paralelo_curso', $validated['paralelo_curso'])
+            ->where('nivel_educativo_id', $validated['nivel_educativo_id'])
+            ->where('turno_curso', $validated['turno_curso'])
+            ->where('estado', 'activo')
+            ->where('id_curso', '!=', $id)
+            ->exists();
+
+        if ($existe) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya existe otro curso activo con ese grado, paralelo, nivel y turno.',
+            ], 409);
+        }
+
+        // Si no tiene restricciones, actualizar todo
         $curso->update($validated);
-        $curso->load('nivel_educativo'); // 👈 CAMBIADO
+        $curso->load('nivel_educativo');
 
         return response()->json([
             'success' => true,
@@ -210,4 +270,50 @@ class CursoController extends Controller
         return $pdf->download("Reporte_Estudiantes_Curso_{$curso->grado_curso}_{$curso->paralelo_curso}.pdf");
     }
 
+    public function inhabilitar($id)
+    {
+        $curso = Curso::findOrFail($id);
+
+        $tieneInscripciones = CursoEstudianteGestion::where('cursos_id_curso', $id)->where('estado', 'inscrito')->exists();
+        $tieneAsignaciones = CursoProfesorMateriaGestion::where('cursos_id_curso', $id)->exists();
+        $tieneNotas = Nota::where('cursos_id_curso', $id)->exists();
+        $tieneHorarios = Horario::where('cursos_id_curso', $id)->exists();
+
+        if ($tieneInscripciones || $tieneAsignaciones || $tieneNotas || $tieneHorarios) {
+            return response()->json([
+                'message' => 'No se puede inhabilitar el curso porque tiene relaciones activas (alumnos, materias, notas o horarios).',
+            ], 409); // Código 409: Conflict
+        }
+
+        $curso->estado = 'inactivo';
+        $curso->save();
+
+        return response()->json([
+            'message' => 'Curso inhabilitado correctamente.',
+            'data' => $curso,
+        ]);
+    }
+
+    public function indexAdmin()
+    {
+        $cursos = Curso::with('nivel_educativo')->get(); // todos, sin filtrar
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lista completa de cursos',
+            'data' => $cursos
+        ], 200);
+    }
+
+    public function reactivar($id)
+    {
+        $curso = Curso::findOrFail($id);
+        $curso->estado = 'activo';
+        $curso->save();
+
+        return response()->json([
+            'message' => 'Curso reactivado correctamente.',
+            'data' => $curso,
+        ]);
+    }
 }

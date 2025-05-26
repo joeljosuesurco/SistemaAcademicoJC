@@ -29,6 +29,8 @@ use App\Http\Controllers\PadreAutenticadoController;
 use App\Http\Controllers\EstudianteAutenticadoController;
 use App\Http\Controllers\RegistrarNotaCursoController;
 use App\Http\Controllers\ReporteNotasController;
+use App\Http\Controllers\NivelEducativoController;
+use App\Http\Controllers\ReporteSeguimientoController;
 
 // Rutas públicas
 Route::post('login', [AuthController::class, 'login']);
@@ -51,9 +53,18 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/cursos/{id}/estudiantes', [CursoController::class, 'estudiantesInscritos']);
     Route::get('/cursos/{id}/horario', [CursoController::class, 'horarioPorCurso']);
     Route::get('/cursos/{id}/horario', [CursoController::class, 'horarioActual']);
+    Route::put('/cursos/{id}/inhabilitar', [CursoController::class, 'inhabilitar']);
+    Route::get('/admin/cursos', [CursoController::class, 'indexAdmin']);
+    Route::put('/cursos/{id}/reactivar', [CursoController::class, 'reactivar']);
 
+    Route::get('/nivel-educativo', [NivelEducativoController::class, 'index']);
 
     Route::apiResource('materias', MateriaController::class);
+    Route::put('/materias/{id}/inhabilitar', [MateriaController::class, 'inhabilitar']);
+    Route::put('/materias/{id}/reactivar', [MateriaController::class, 'reactivar']);
+    Route::get('/materias/{id}', [MateriaController::class, 'show']);
+    Route::get('/admin/materias', [MateriaController::class, 'indexAdmin']);
+
     Route::apiResource('gestiones', GestionController::class);
     Route::apiResource('horarios', HorarioController::class);
     //Route::apiResource('notas', NotaController::class);
@@ -78,6 +89,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/info/estudiantes/{id}', [EstudianteInfoController::class, 'show']);
     Route::get('/info/profesores', [ProfesorInfoController::class, 'index']);
     Route::get('/info/profesores/{id}', [ProfesorInfoController::class, 'show']);
+
+    Route::put('/profesores/{id}/inhabilitar', [ProfesorController::class, 'inhabilitar']);
+    Route::put('/profesores/{id}/reactivar', [ProfesorController::class, 'reactivar']);
+    Route::get('/admin/profesores-completo', [ProfesorController::class, 'todos']);
+
     Route::post('/inscribir-estudiante', [InscripcionEstudianteController::class, 'store']);
     Route::post('/inscribir-curso', [InscripcionCursoController::class, 'store']);
     Route::put('/actualizar-estudiante/{id}', [ActualizarEstudianteController::class, 'update']);
@@ -179,6 +195,11 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/actualizar-padre/{id}', [ActualizarPadreController::class, 'update']);
     Route::post('/actualizar-padre/{id}', [ActualizarPadreController::class, 'update']);
 
-
+    //reportes estadisticos
+    Route::prefix('reportes/rendimiento')->controller(ReporteSeguimientoController::class)->group(function () {
+    Route::get('/materias', 'rendimientoPorMateria');
+    Route::get('/cursos', 'rendimientoPorCurso');
+    Route::get('/estudiantes/{curso_id}/{materia_id}', 'rendimientoPorEstudiantes');
+    });
 
 });

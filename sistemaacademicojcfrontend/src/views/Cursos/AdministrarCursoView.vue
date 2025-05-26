@@ -22,6 +22,7 @@
                     <th class="px-4 py-2 text-left">Nivel</th>
                     <th class="px-4 py-2 text-left">Aula</th>
                     <th class="px-4 py-2 text-left">Turno</th>
+                    <th class="px-4 py-2 text-left">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -41,6 +42,14 @@
                     <td class="px-4 py-2">{{ curso.nivel_educativo?.nombre }}</td>
                     <td class="px-4 py-2">{{ curso.aula_curso }}</td>
                     <td class="px-4 py-2">{{ curso.turno_curso }}</td>
+                    <td class="px-4 py-2">
+                      <span
+                        :class="curso.estado === 'activo' ? 'text-green-600' : 'text-red-600'"
+                        class="font-medium"
+                      >
+                        {{ curso.estado }}
+                      </span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -107,7 +116,24 @@
           </div>
 
           <div class="flex gap-4">
-            <BaseButton label="Guardar cambios" color="success" @click="actualizarCurso" />
+            <BaseButton
+              label="Guardar cambios"
+              color="success"
+              @click="modalConfirmarEdicion = true"
+            />
+            <BaseButton
+              v-if="cursoSeleccionado?.estado === 'activo'"
+              label="Inhabilitar curso"
+              color="danger"
+              @click="confirmarAccion('inhabilitar')"
+            />
+
+            <BaseButton
+              v-else
+              label="Reactivar curso"
+              color="warning"
+              @click="confirmarAccion('reactivar')"
+            />
             <BaseButton label="Crear Horario" color="primary" @click="activarHorario" />
           </div>
           <div v-if="mensaje" class="text-green-600 mt-2">{{ mensaje }}</div>
@@ -256,6 +282,59 @@
         </div>
       </div>
     </div>
+    <CardBoxModal
+      v-model="modalVisibleEdit"
+      title="Curso actualizado correctamente"
+      button="Aceptar"
+      color="info"
+    >
+      <p>
+        El curso
+        <strong
+          >{{ cursoSeleccionado?.grado_curso }} {{ cursoSeleccionado?.paralelo_curso }}</strong
+        >
+        fue editado con éxito.
+      </p>
+    </CardBoxModal>
+    <CardBoxModal
+      v-model="modalAdvertencia"
+      title="No se puede inhabilitar"
+      color="danger"
+      button="Aceptar"
+    >
+      <p class="text-red-700 font-medium">
+        {{ mensajeAdvertencia }}
+      </p>
+    </CardBoxModal>
+    <CardBoxModal
+      v-model="modalConfirmarAccion"
+      :title="
+        tipoAccion === 'inhabilitar'
+          ? '¿Desea inhabilitar este curso?'
+          : '¿Desea reactivar este curso?'
+      "
+      :button="tipoAccion === 'inhabilitar' ? 'Inhabilitar' : 'Reactivar'"
+      :color="tipoAccion === 'inhabilitar' ? 'danger' : 'warning'"
+      @confirm="ejecutarAccion"
+    />
+    <CardBoxModal v-model="modalVisibleEdit" title="Éxito" button="Aceptar" color="success">
+      <p>{{ mensajeExito }}</p>
+    </CardBoxModal>
+    <CardBoxModal
+      v-model="modalConfirmarEdicion"
+      :title="`¿Desea guardar los cambios del curso ${form.grado_curso} ${form.paralelo_curso}?`"
+      button="Guardar"
+      color="success"
+      @confirm="actualizarCurso"
+    />
+    <CardBoxModal
+      v-model="modalVisibleEdit"
+      title="Curso actualizado"
+      button="Aceptar"
+      color="info"
+    >
+      <p>{{ mensajeExito }}</p>
+    </CardBoxModal>
   </LayoutAuthenticated>
 </template>
 
@@ -264,6 +343,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import BaseButton from '@/components/BaseButton.vue'
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
+import CardBoxModal from '@/components/CardBoxModal.vue'
 
 const cursos = ref([])
 const cursoSeleccionado = ref(null)
@@ -303,10 +383,21 @@ const horasOrdenadas = ref([])
 
 const modoEditar = ref(false)
 const idBloqueEditando = ref(null)
+const modalVisibleEdit = ref(false)
+
+const modalAdvertencia = ref(false)
+const mensajeAdvertencia = ref('')
+
+const modalConfirmarAccion = ref(false)
+const tipoAccion = ref('') // 'inhabilitar' o 'reactivar'
+
+const mensajeExito = ref('')
+
+const modalConfirmarEdicion = ref(false)
 
 const cargarCursos = async () => {
   try {
-    const res = await api.get('/cursos')
+    const res = await api.get('/admin/cursos')
     cursos.value = res.data.data.map((curso) => ({
       ...curso,
       grado_curso: curso.grado_curso.toUpperCase(),
@@ -347,12 +438,19 @@ const actualizarCurso = async () => {
   if (!cursoSeleccionado.value) return
   try {
     const res = await api.put(`/cursos/${cursoSeleccionado.value.id_curso}`, form)
-    mensaje.value = res.data.message
+
+    mensajeExito.value = res.data.message || 'Curso actualizado correctamente.'
     error.value = ''
+    modalVisibleEdit.value = true
     await cargarCursos()
-  } catch {
-    error.value = 'Error al actualizar el curso'
-    mensaje.value = ''
+  } catch (error) {
+    if (error.response?.status === 409) {
+      mensajeAdvertencia.value = error.response.data.message
+      modalAdvertencia.value = true
+    } else {
+      error.value = 'Error al actualizar el curso.'
+      mensajeExito.value = ''
+    }
   }
 }
 
@@ -547,6 +645,39 @@ const niveles = computed(() => {
   return Array.from(mapa.values())
 })
 
+const ejecutarAccion = async () => {
+  if (!cursoSeleccionado.value) return
+
+  try {
+    if (tipoAccion.value === 'inhabilitar') {
+      await api.put(`/cursos/${cursoSeleccionado.value.id_curso}/inhabilitar`)
+      mensajeExito.value = `Curso "${cursoSeleccionado.value.grado_curso} ${cursoSeleccionado.value.paralelo_curso}" inhabilitado correctamente.`
+      Object.assign(cursoSeleccionado.value, { estado: 'inactivo' })
+      modalVisibleEdit.value = true
+      cancelar()
+    } else if (tipoAccion.value === 'reactivar') {
+      await api.put(`/cursos/${cursoSeleccionado.value.id_curso}/reactivar`)
+      mensajeExito.value = `Curso "${cursoSeleccionado.value.grado_curso} ${cursoSeleccionado.value.paralelo_curso}" reactivado correctamente.`
+      Object.assign(cursoSeleccionado.value, { estado: 'activo' })
+      modalVisibleEdit.value = true
+    }
+
+    await cargarCursos()
+  } catch (error) {
+    if (error.response?.status === 409) {
+      mensajeAdvertencia.value = error.response.data.message
+      modalAdvertencia.value = true
+    } else {
+      error.value = 'Error al realizar la acción.'
+    }
+  } finally {
+    modalConfirmarAccion.value = false
+  }
+}
+const confirmarAccion = (accion) => {
+  tipoAccion.value = accion
+  modalConfirmarAccion.value = true
+}
 onMounted(() => {
   cargarCursos()
 })

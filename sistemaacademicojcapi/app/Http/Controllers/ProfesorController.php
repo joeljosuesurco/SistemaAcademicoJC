@@ -9,11 +9,12 @@ class ProfesorController extends Controller
 {
     public function index()
     {
-        $profesores = Profesor::all();
+        // Solo profesores activos
+        $profesores = Profesor::activos()->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Lista de profesores',
+            'message' => 'Lista de profesores activos',
             'data' => $profesores
         ], 200);
     }
@@ -37,7 +38,6 @@ class ProfesorController extends Controller
             'data' => $profesor
         ], 201);
     }
-
 
     public function show($id)
     {
@@ -92,7 +92,6 @@ class ProfesorController extends Controller
         ], 200);
     }
 
-
     public function destroy($id)
     {
         $profesor = Profesor::find($id);
@@ -112,5 +111,58 @@ class ProfesorController extends Controller
             'message' => 'Profesor eliminado correctamente.',
             'data' => null
         ], 200);
+    }
+
+    public function inhabilitar($id)
+    {
+        $profesor = Profesor::find($id);
+
+        if (!$profesor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Profesor no encontrado.',
+            ], 404);
+        }
+
+        $profesor->estado_profesor = 'inactivo';
+        $profesor->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profesor inhabilitado correctamente.',
+            'data' => $profesor,
+        ]);
+    }
+
+    public function reactivar($id)
+    {
+        $profesor = Profesor::find($id);
+
+        if (!$profesor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Profesor no encontrado.',
+            ], 404);
+        }
+
+        $profesor->estado_profesor = 'activo';
+        $profesor->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profesor reactivado correctamente.',
+            'data' => $profesor,
+        ]);
+    }
+
+    public function todos()
+    {
+        $profesores = Profesor::with('persona_rol.persona.documento')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lista completa de profesores (activos e inactivos)',
+            'data' => $profesores
+        ]);
     }
 }

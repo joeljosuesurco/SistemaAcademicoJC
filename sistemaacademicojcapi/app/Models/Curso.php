@@ -20,6 +20,7 @@ class Curso extends Model
         'aula_curso',
         'descripcion',
         'nivel_educativo_id',  // Nuevo campo
+        'estado', // 👈 Añadir este campo
     ];
 
     // Relaciones
@@ -53,5 +54,9 @@ class Curso extends Model
     public function nivel_educativo(): BelongsTo
     {
         return $this->belongsTo(NivelEducativo::class, 'nivel_educativo_id');
+    }
+    public function scopeActivos($query)
+    {
+        return $query->where('estado', 'activo');
     }
 }

@@ -19,13 +19,16 @@ class ProfesorSeeder extends Seeder
 
         foreach ($rolesProfesores as $personaRol) {
             Profesor::create([
-                'especialidad_profesor' => $faker->randomElement(['Matemáticas', 'Lenguaje', 'Historia']),
-                'estado_profesor' => 'activo',
-                'titulo_provision_nacional' => $faker->randomElement(['Lic. en Educación', 'MSc. en Física', 'Técnico en Computación']),
-                'rda' => strtoupper($faker->bothify('RDA-###??')),
-                'cas' => strtoupper($faker->bothify('CAS-####')),
+                'especialidad_profesor' => $faker->randomElement([
+                    'Matemáticas', 'Lenguaje', 'Educación Física', 'Música', 'Ciencias Naturales'
+                ]),
+                'estado_profesor' => 'activo', // 👈 importante
+                'titulo_provision_nacional' => $faker->optional()->sentence(3),
+                'rda' => $faker->optional()->numerify('RDA-####'),
+                'cas' => $faker->optional()->numerify('CAS-####'),
                 'persona_rol_id_persona_rol' => $personaRol->id_persona_rol,
             ]);
         }
     }
 }
+

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- ✅ Título sin encabezado de estudiante -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Boleta de Calificaciones"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#0D47A1"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp" />
+
+            <!-- 📊 Tabla de notas -->
+            <TableLayout
+                android:id="@+id/tablaResumen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*"
+                android:shrinkColumns="*"
+                android:background="#FFFFFF"
+                android:padding="8dp">
+
+                <TableRow android:background="#E3F2FD">
+                    <TextView android:text="MATERIAS"
+                        android:padding="12dp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1" />
+
+                    <TextView android:text="1er Trim"
+                        android:padding="12dp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1" />
+
+                    <TextView android:text="2do Trim"
+                        android:padding="12dp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1" />
+
+                    <TextView android:text="3er Trim"
+                        android:padding="12dp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1" />
+
+                    <TextView android:text="Promedio Final"
+                        android:padding="12dp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1" />
+                </TableRow>
+
+                              <!-- Las filas se agregarán dinámicamente -->
+
+            </TableLayout>
+            <Button
+                android:id="@+id/btnActualizarBoleta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔄 Actualizar"
+                android:layout_marginBottom="12dp"
+                android:layout_gravity="center_horizontal" />
+        </LinearLayout>
+    </ScrollView>
+</HorizontalScrollView>

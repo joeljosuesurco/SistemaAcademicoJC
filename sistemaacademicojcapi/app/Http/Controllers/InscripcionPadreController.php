@@ -44,7 +44,6 @@ class InscripcionPadreController extends Controller
 
             $personaData = $request->input('persona');
 
-            // 📷 Procesar imagen si se sube
             if (
                 $request->hasFile('persona.fotografia_persona') &&
                 $request->file('persona.fotografia_persona')->isValid()
@@ -68,15 +67,33 @@ class InscripcionPadreController extends Controller
 
             $padreData = $request->input('padre');
             $padreData['persona_rol_id_persona_rol'] = $personaRol->id_persona_rol;
-
             $padre = Padre::create($padreData);
+
+            // ✅ Crear usuario
+            $baseUsername = strtolower(
+                preg_replace('/\s+/', '', $persona->nombres_persona . $persona->apellidos_pat)
+            );
+            $username = $baseUsername;
+            $contador = 1;
+
+            while (\App\Models\User::where('name_user', $username)->exists()) {
+                $username = $baseUsername . $contador;
+                $contador++;
+            }
+
+            \App\Models\User::create([
+                'name_user' => $username,
+                'password' => \Illuminate\Support\Facades\Hash::make('admin123'),
+                'state_user' => 'activo',
+                'persona_rol_id_persona_rol' => $personaRol->id_persona_rol,
+            ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Padre registrado correctamente.',
-                'data' => $padre,
+                'usuario_generado' => $username,
             ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -88,4 +105,5 @@ class InscripcionPadreController extends Controller
             ], 500);
         }
     }
+
 }
