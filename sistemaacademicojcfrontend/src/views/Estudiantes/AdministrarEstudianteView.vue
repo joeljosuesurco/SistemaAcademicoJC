@@ -131,20 +131,48 @@ const confirmarActualizarEstudiante = async () => {
 }
 
 const confirmarCambioEstado = async () => {
-  if (!form.curso_id || !form.gestion_id) return
-
-  const payload = {
-    persona: form.persona,
-    documento: form.documento,
-    estudiante: form.estudiante,
-    curso_id: form.curso_id,
-    gestion_id: form.gestion_id,
-    remover_inscripcion: esInscrito.value,
-    rehabilitar: !esInscrito.value,
-  }
+  if (!estudianteSeleccionado.value) return
 
   try {
-    await api.put(`/actualizar-estudiante/${estudianteSeleccionado.value.id_estudiante}`, payload)
+    const formData = new FormData()
+
+    // ✅ Persona
+    for (const [key, value] of Object.entries(form.persona)) {
+      if (key === 'fotografia_persona') {
+        if (value instanceof File) {
+          formData.append(`persona[${key}]`, value)
+        }
+      } else if (value !== undefined && value !== null) {
+        formData.append(`persona[${key}]`, value)
+      }
+    }
+
+    // ✅ Documento
+    for (const [key, value] of Object.entries(form.documento)) {
+      formData.append(`documento[${key}]`, value)
+    }
+
+    // ✅ Estudiante
+    for (const [key, value] of Object.entries(form.estudiante)) {
+      formData.append(`estudiante[${key}]`, value)
+    }
+
+    // ✅ Extra: estado de inscripción
+    formData.append('curso_id', form.curso_id)
+    formData.append('gestion_id', form.gestion_id)
+    formData.append('remover_inscripcion', esInscrito.value ? 1 : 0)
+    formData.append('rehabilitar', !esInscrito.value ? 1 : 0)
+
+    await api.post(
+      `/actualizar-estudiante/${estudianteSeleccionado.value.id_estudiante}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    )
+
     mensaje.value = ''
     error.value = ''
     mensajeExito.value =
@@ -156,7 +184,7 @@ const confirmarCambioEstado = async () => {
     cargarEstudiantes()
   } catch (err) {
     console.error(err)
-    error.value = 'No se pudo actualizar el estado de inscripción'
+    error.value = err.response?.data?.message || 'No se pudo actualizar el estado de inscripción'
     mensaje.value = ''
   } finally {
     mostrarModalEstado.value = false

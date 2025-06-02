@@ -244,21 +244,27 @@ const form = ref({
 async function loadEstudiantes() {
   try {
     const res = await api.get('/info/estudiantes')
-    estudiantes.value = (res.data.estudiantes || []).map((est) => {
-      const p = est.persona_rol.persona
-      const insc =
-        est.cursos.find((c) => c.estado === 'inscrito' && c.gestion.estado_gestion === 'activa') ||
-        {}
-      return {
-        id_estudiante: est.id_estudiante,
-        apellidos_pat: p.apellidos_pat,
-        apellidos_mat: p.apellidos_mat,
-        nombres: p.nombres_persona,
-        nombre_completo: `${p.apellidos_pat} ${p.apellidos_mat} ${p.nombres_persona}`,
-        curso: insc.curso ? `${insc.curso.grado_curso} ${insc.curso.paralelo_curso}` : '—',
-        nivel_educativo: insc.curso?.nivel_educativo,
-      }
-    })
+
+    estudiantes.value = (res.data.estudiantes || [])
+      .filter((est) =>
+        est.cursos.some((c) => c.estado === 'inscrito' && c.gestion.estado_gestion === 'activa'),
+      )
+      .map((est) => {
+        const p = est.persona_rol.persona
+        const insc = est.cursos.find(
+          (c) => c.estado === 'inscrito' && c.gestion.estado_gestion === 'activa',
+        )
+        const cu = insc?.curso
+        return {
+          id_estudiante: est.id_estudiante,
+          apellidos_pat: p.apellidos_pat,
+          apellidos_mat: p.apellidos_mat,
+          nombres: p.nombres_persona,
+          nombre_completo: `${p.apellidos_pat} ${p.apellidos_mat} ${p.nombres_persona}`,
+          curso: cu ? `${cu.grado_curso} ${cu.paralelo_curso}` : '—',
+          nivel_educativo: cu?.nivel_educativo,
+        }
+      })
   } catch {
     errorEstudiantes.value = 'Error al cargar estudiantes'
   } finally {
