@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Padre;
-use App\Models\Estudiante;
-use App\Models\PadreEstudiante;
+use App\Models\{Padre, Estudiante, PadreEstudiante, ActividadSistema};
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\{Validator, Auth};
 
 class AsignarHijosPadreController extends Controller
 {
@@ -40,6 +38,16 @@ class AsignarHijosPadreController extends Controller
             'estudiantes_id_estudiante' => $request->estudiantes_id_estudiante,
         ]);
 
+        // Log
+        ActividadSistema::create([
+            'usuario_id' => Auth::id(),
+            'accion' => 'asignar',
+            'modulo' => 'asignar-hijos',
+            'descripcion' => "Asignó estudiante ID {$request->estudiantes_id_estudiante} al padre ID {$request->padres_id_padre}",
+            'ip' => $request->ip(),
+            'navegador' => $request->userAgent(),
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Estudiante asignado correctamente al padre.',
@@ -61,6 +69,16 @@ class AsignarHijosPadreController extends Controller
         }
 
         $asignacion->delete();
+
+        // Log
+        ActividadSistema::create([
+            'usuario_id' => Auth::id(),
+            'accion' => 'eliminar',
+            'modulo' => 'asignar-hijos',
+            'descripcion' => "Eliminó relación padre ID {$padreId} - estudiante ID {$estudianteId}",
+            'ip' => request()->ip(),
+            'navegador' => request()->userAgent(),
+        ]);
 
         return response()->json([
             'success' => true,

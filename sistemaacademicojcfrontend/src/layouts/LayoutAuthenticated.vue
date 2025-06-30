@@ -1,6 +1,6 @@
 <script setup>
 import { mdiForwardburger, mdiBackburger, mdiMenu } from '@mdi/js'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMenuAside } from '@/menuAside.js'
 import menuNavBar from '@/menuNavBar.js'
@@ -14,13 +14,11 @@ import { useAuth } from '@/composables/useAuth'
 import { useVistaDashboard } from '@/composables/useVistaDashboard'
 import { useMainStore } from '@/stores/main'
 
-// Padding del layout según sidebar
 const layoutAsidePadding = 'xl:pl-60'
 
 const mainStore = useMainStore()
 const userRole = computed(() => mainStore.userRole)
 
-// Mapeo de acceso por rol
 const accesoPorRol = {
   administrativo: [
     'Menú Principal',
@@ -44,7 +42,6 @@ const accesoPorRol = {
     'Notas',
     'Seguimiento de Estudiantes',
   ],
-
   estudiante: ['Menú Principal', 'Mi Información', 'Comunicados', 'Notas', 'Seguimiento Diario'],
   padre: [
     'Menú Principal',
@@ -56,7 +53,6 @@ const accesoPorRol = {
   ],
 }
 
-// Menu filtrado dinámico
 const filteredMenu = computed(() => {
   const allowed = accesoPorRol[userRole.value] || []
   return getMenuAside().filter((item) => allowed.includes(item.label))
@@ -81,16 +77,42 @@ router.beforeEach(() => {
 })
 
 const menuClick = (event, item) => {
-  if (item.isToggleLightDark) {
-    darkModeStore.set()
-  }
-  if (item.to === '/dashboard') {
-    setVistaActual('dashboard')
-  }
-  if (item.isLogout) {
-    logout()
-  }
+  if (item.isToggleLightDark) darkModeStore.set()
+  if (item.to === '/dashboard') setVistaActual('dashboard')
+  if (item.isLogout) logout()
 }
+
+// --- COMBINACIONES SECRETAS ---
+let lastKey = ''
+const handleSecretShortcut = (e) => {
+  const rol = mainStore.userRole
+
+  if (lastKey === 'g' && e.key === 'ArrowUp') {
+    if (rol === 'administrativo') {
+      router.push('/notas/gestiones')
+    } else {
+      alert('No tienes permisos para acceder a esta sección.')
+    }
+  }
+
+  if (lastKey === 'l' && e.key === 'ArrowUp') {
+    if (rol === 'administrativo') {
+      router.push('/admin/logs')
+    } else {
+      alert('No tienes permisos para acceder a esta sección.')
+    }
+  }
+
+  lastKey = e.key.toLowerCase()
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleSecretShortcut)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleSecretShortcut)
+})
 </script>
 
 <template>

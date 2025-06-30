@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Estudiante;
 use App\Models\Documento;
 use App\Models\CursoEstudianteGestion;
+use App\Models\ActividadSistema;
+use Illuminate\Support\Facades\Auth;
 
 class ActualizarEstudianteController extends Controller
 {
@@ -41,7 +43,6 @@ class ActualizarEstudianteController extends Controller
 
         $personaData = $request->input('persona');
 
-        // 📷 Si hay foto nueva, procesar y guardar
         if (
             $request->hasFile('persona.fotografia_persona') &&
             $request->file('persona.fotografia_persona')->isValid()
@@ -51,11 +52,6 @@ class ActualizarEstudianteController extends Controller
             $foto->storeAs('public/fotos', $nombreArchivo);
 
             $personaData['fotografia_persona'] = $nombreArchivo;
-
-            // (opcional) eliminar archivo anterior si no es nulo
-            // if ($persona->fotografia_persona) {
-            //     Storage::delete('public/fotos/' . $persona->fotografia_persona);
-            // }
         }
 
         $persona->update($personaData);
@@ -87,6 +83,15 @@ class ActualizarEstudianteController extends Controller
                 ['estado', 'no_inscrito']
             ])->update(['estado' => 'inscrito']);
         }
+
+        ActividadSistema::create([
+            'usuario_id' => Auth::id(),
+            'accion' => 'actualización',
+            'modulo' => 'estudiantes',
+            'descripcion' => "Actualizó datos del estudiante con ID: $id",
+            'ip' => $request->ip() ?? $request->server('REMOTE_ADDR'),
+            'navegador' => $request->userAgent(),
+        ]);
 
         return response()->json([
             'success' => true,

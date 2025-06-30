@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use App\Models\ActividadSistema;
 
 class ActualizarPadreController extends Controller
 {
@@ -53,7 +55,6 @@ class ActualizarPadreController extends Controller
             $persona = $padre->persona_rol->persona;
             $personaData = $request->input('persona');
 
-            // 📷 Procesar nueva foto si se envía
             if (
                 $request->hasFile('persona.fotografia_persona') &&
                 $request->file('persona.fotografia_persona')->isValid()
@@ -61,21 +62,22 @@ class ActualizarPadreController extends Controller
                 $foto = $request->file('persona.fotografia_persona');
                 $nombreArchivo = uniqid('foto_') . '.' . $foto->getClientOriginalExtension();
                 $foto->storeAs('public/fotos', $nombreArchivo);
-
-                // (Opcional) Eliminar foto anterior
-                // if ($persona->fotografia_persona) {
-                //     Storage::delete('public/fotos/' . $persona->fotografia_persona);
-                // }
-
                 $personaData['fotografia_persona'] = $nombreArchivo;
             }
 
             $persona->update($personaData);
-
-            $documento = $persona->documento;
-            $documento->update($request->input('documento'));
-
+            $persona->documento->update($request->input('documento'));
             $padre->update($request->input('padre'));
+
+            // Registrar log de actividad
+            ActividadSistema::create([
+                'usuario_id' => Auth::id(),
+                'accion' => 'actualización',
+                'modulo' => 'padres',
+                'descripcion' => "Se actualizó el padre con ID: $id",
+                'ip' => $request->ip() ?? $request->server('REMOTE_ADDR'),
+                'navegador' => $request->userAgent(),
+            ]);
 
             DB::commit();
 
@@ -95,3 +97,4 @@ class ActualizarPadreController extends Controller
         }
     }
 }
+

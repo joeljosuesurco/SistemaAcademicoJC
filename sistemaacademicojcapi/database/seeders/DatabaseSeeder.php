@@ -54,6 +54,11 @@ class DatabaseSeeder extends Seeder
             DocumentoSeeder::class,
             NotificacionSeeder::class,
             NotificacionUsuarioSeeder::class,
+            Gestion2024Seeder::class,
+            CursoEstudianteGestion2024Seeder::class,
+            CursoProfesorMateriaGestion2024Seeder::class,
+            NotaGestion2024Seeder::class,
+
         ]);
 
                 $roles = [

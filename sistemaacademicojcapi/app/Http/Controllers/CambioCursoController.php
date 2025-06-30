@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\CursoEstudianteGestion;
+use App\Models\ActividadSistema;
+use Illuminate\Support\Facades\Auth;
 
 class CambioCursoController extends Controller
 {
@@ -19,7 +21,6 @@ class CambioCursoController extends Controller
         $gestionId = $request->gestiones_id_gestion;
         $nuevoCursoId = $request->nuevo_curso_id;
 
-        // Buscar inscripción actual activa
         $inscripcionActual = CursoEstudianteGestion::where([
             ['estudiantes_id_estudiante', $estudianteId],
             ['gestiones_id_gestion', $gestionId],
@@ -33,10 +34,8 @@ class CambioCursoController extends Controller
             ], 404);
         }
 
-        // Marcar inscripción anterior como no inscrito
         $inscripcionActual->update(['estado' => 'no_inscrito']);
 
-        // Registrar nueva inscripción
         $nuevaInscripcion = CursoEstudianteGestion::create([
             'estudiantes_id_estudiante' => $estudianteId,
             'cursos_id_curso' => $nuevoCursoId,
@@ -45,6 +44,17 @@ class CambioCursoController extends Controller
         ]);
 
         $nuevaInscripcion->load(['curso.nivel_educativo']);
+
+        // 🔒 Registrar actividad
+        $user = Auth::user();
+        ActividadSistema::create([
+            'usuario_id' => $user->id_user,
+            'accion' => 'cambiar_curso',
+            'modulo' => 'curso_estudiante',
+            'descripcion' => "Cambio de curso para estudiante ID $estudianteId en gestión $gestionId al curso $nuevoCursoId",
+            'ip' => $request->ip() ?? $request->server('REMOTE_ADDR'),
+            'navegador' => $request->userAgent(),
+        ]);
 
         return response()->json([
             'success' => true,
@@ -63,19 +73,17 @@ class CambioCursoController extends Controller
         $estudianteId = $request->estudiantes_id_estudiante;
         $gestionId = $request->gestiones_id_gestion;
 
-        // Buscar inscripción actual (estado = inscrito)
         $inscripcionActual = CursoEstudianteGestion::where([
             ['estudiantes_id_estudiante', $estudianteId],
             ['gestiones_id_gestion', $gestionId],
             ['estado', 'inscrito']
         ])->first();
 
-        // Buscar inscripción anterior (estado = no_inscrito)
         $inscripcionAnterior = CursoEstudianteGestion::where([
             ['estudiantes_id_estudiante', $estudianteId],
             ['gestiones_id_gestion', $gestionId],
             ['estado', 'no_inscrito']
-        ])->latest('id')->first(); // más reciente
+        ])->latest('id')->first();
 
         if (!$inscripcionActual || !$inscripcionAnterior) {
             return response()->json([
@@ -84,11 +92,21 @@ class CambioCursoController extends Controller
             ], 404);
         }
 
-        // Revertir los estados
         $inscripcionActual->update(['estado' => 'no_inscrito']);
         $inscripcionAnterior->update(['estado' => 'inscrito']);
 
         $inscripcionAnterior->load(['curso.nivel_educativo']);
+
+        // 🔒 Registrar actividad
+        $user = Auth::user();
+        ActividadSistema::create([
+            'usuario_id' => $user->id_user,
+            'accion' => 'revertir_curso',
+            'modulo' => 'curso_estudiante',
+            'descripcion' => "Reversión de curso para estudiante ID $estudianteId en gestión $gestionId. Curso reactivado: {$inscripcionAnterior->cursos_id_curso}",
+            'ip' => $request->ip() ?? $request->server('REMOTE_ADDR'),
+            'navegador' => $request->userAgent(),
+        ]);
 
         return response()->json([
             'success' => true,

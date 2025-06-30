@@ -31,6 +31,8 @@ use App\Http\Controllers\RegistrarNotaCursoController;
 use App\Http\Controllers\ReporteNotasController;
 use App\Http\Controllers\NivelEducativoController;
 use App\Http\Controllers\ReporteSeguimientoController;
+use App\Http\Controllers\HistorialNotasController;
+use App\Http\Controllers\ActividadSistemaController;
 
 // Rutas públicas
 Route::post('login', [AuthController::class, 'login']);
@@ -200,6 +202,13 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/materias', 'rendimientoPorMateria');
     Route::get('/cursos', 'rendimientoPorCurso');
     Route::get('/estudiantes/{curso_id}/{materia_id}', 'rendimientoPorEstudiantes');
-    });
 
+
+    });
+    // para gestiones anteriores
+    Route::middleware('auth:api')->get('/historial/notas', [HistorialNotasController::class, 'notasPorGestion']);
+    Route::post('/gestiones/administrar/cambiar', [AdministrarGestionController::class, 'cambiarGestion']);
+
+    // Logs del sistema (solo para administradores)
+    Route::get('/logs', [ActividadSistemaController::class, 'index']);
 });

@@ -75,6 +75,7 @@ export function getMenuAside() {
           { label: 'Notas', to: '/notas' },
           { label: 'Registrar Nota Alumno', to: '/notas/registrar' },
           { label: 'Registrar Nota Curso ', to: '/admin/registrar-notas' },
+          { label: 'Historial de Notas', to: '/notas/anteriores' }, // 👈 NUEVO
         ],
       },
       {

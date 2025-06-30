@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Profesor;
+use App\Models\ActividadSistema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class ActualizarProfesorController extends Controller
 {
@@ -34,7 +36,7 @@ class ActualizarProfesorController extends Controller
             'persona.nacionalidad_persona' => 'required|string|max:100',
             'persona.direccion_persona' => 'nullable|string|max:200',
             'persona.celular_persona' => 'nullable|string|max:20',
-            'persona.fotografia_persona' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // ✅ ahora como archivo
+            'persona.fotografia_persona' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
 
             'documento.carnet_identidad' => 'required|string|max:20|unique:documentos,carnet_identidad,' . $documento->id_documento . ',id_documento',
             'documento.certificado_nacimiento' => 'nullable|string|max:100',
@@ -58,7 +60,6 @@ class ActualizarProfesorController extends Controller
 
             $personaData = $request->input('persona');
 
-            // 📷 Procesar foto si se envía
             if (
                 $request->hasFile('persona.fotografia_persona') &&
                 $request->file('persona.fotografia_persona')->isValid()
@@ -66,18 +67,22 @@ class ActualizarProfesorController extends Controller
                 $foto = $request->file('persona.fotografia_persona');
                 $nombreArchivo = uniqid('foto_') . '.' . $foto->getClientOriginalExtension();
                 $foto->storeAs('public/fotos', $nombreArchivo);
-
-                // 🧹 (Opcional) Eliminar foto anterior
-                // if ($persona->fotografia_persona) {
-                //     Storage::delete('public/fotos/' . $persona->fotografia_persona);
-                // }
-
                 $personaData['fotografia_persona'] = $nombreArchivo;
             }
 
             $persona->update($personaData);
             $documento->update($request->input('documento'));
             $profesor->update($request->input('profesor'));
+
+            // Registrar en actividad del sistema
+            ActividadSistema::create([
+                'usuario_id' => Auth::id(),
+                'accion' => 'actualización',
+                'modulo' => 'profesores',
+                'descripcion' => "Se actualizó el profesor con ID: $id",
+                'ip' => $request->ip() ?? $request->server('REMOTE_ADDR'),
+                'navegador' => $request->userAgent(),
+            ]);
 
             DB::commit();
 

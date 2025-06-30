@@ -203,6 +203,12 @@ const routes = [
     component: RegistrarNotaView,
     meta: { requiresAuth: true, title: 'Registrar Nota' },
   },
+  {
+    path: '/notas/anteriores',
+    name: 'notas-anteriores',
+    component: () => import('@/views/Notas/NotasAnteriores.vue'),
+    meta: { requiresAuth: true, title: 'Historial de Notas' },
+  },
 
   // Fallback
   {
@@ -328,6 +334,18 @@ const routes = [
       requiresAuth: true,
       role: ['admin'],
     },
+  },
+  {
+    path: '/notas/gestiones',
+    name: 'AdministrarGestion',
+    component: () => import('@/views/Notas/AdministrarGestionView.vue'),
+    meta: { requiresAuth: true, title: 'Administrar Gestión' },
+  },
+  {
+    path: '/admin/logs',
+    name: 'LogsSistema',
+    component: () => import('@/views/Logs/LogsView.vue'),
+    meta: { requiresAuth: true, title: 'Logs del Sistema' },
   },
 ]
 

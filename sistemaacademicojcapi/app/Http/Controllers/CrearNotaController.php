@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Nota;
 use App\Models\DimensionNota;
+use App\Models\ActividadSistema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -14,18 +15,17 @@ class CrearNotaController extends Controller
     {
         $user = Auth::user();
 
-        // 1. Validación (permitimos cualquier valor >=0 y luego capearemos)
         $validator = Validator::make($request->all(), [
-            'estudiante_id'                => 'required|exists:estudiantes,id_estudiante',
-            'materia_id'                   => 'required|exists:materias,id_materia',
-            'curso_id'                     => 'required|exists:cursos,id_curso',
-            'gestion_id'                   => 'required|exists:gestiones,id_gestion',
-            'periodo'                      => 'required|string|max:50',
-            'numero_periodo'               => 'required|integer|between:1,3',
-            'nota_final'                   => 'nullable|numeric|min:0',
-            'dimensiones'                  => 'nullable|array',
-            'dimensiones.*.nombre_dimension'=> 'required|string|max:50',
-            'dimensiones.*.valor_obtenido'  => 'nullable|numeric|min:0|max:100',
+            'estudiante_id'                  => 'required|exists:estudiantes,id_estudiante',
+            'materia_id'                     => 'required|exists:materias,id_materia',
+            'curso_id'                       => 'required|exists:cursos,id_curso',
+            'gestion_id'                     => 'required|exists:gestiones,id_gestion',
+            'periodo'                        => 'required|string|max:50',
+            'numero_periodo'                 => 'required|integer|between:1,3',
+            'nota_final'                     => 'nullable|numeric|min:0',
+            'dimensiones'                    => 'nullable|array',
+            'dimensiones.*.nombre_dimension' => 'required|string|max:50',
+            'dimensiones.*.valor_obtenido'   => 'nullable|numeric|min:0|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -35,13 +35,9 @@ class CrearNotaController extends Controller
             ], 422);
         }
 
-        // 2. Capear nota_final a 100
         $rawNota        = $request->input('nota_final');
-        $nota_final_cap = $rawNota !== null
-            ? min((int) $rawNota, 100)
-            : null;
+        $nota_final_cap = $rawNota !== null ? min((int) $rawNota, 100) : null;
 
-        // 3. Buscamos registro existente
         $nota = Nota::where('estudiantes_id_estudiante', $request->estudiante_id)
             ->where('materias_id_materia',    $request->materia_id)
             ->where('cursos_id_curso',        $request->curso_id)
@@ -51,11 +47,9 @@ class CrearNotaController extends Controller
             ->first();
 
         if ($nota) {
-            // 4a. Actualización
             $nota->nota_final = $nota_final_cap;
             $nota->save();
 
-            // Reemplazar dimensiones
             $nota->dimensiones()->delete();
             if (!empty($request->dimensiones)) {
                 foreach ($request->dimensiones as $dim) {
@@ -70,8 +64,17 @@ class CrearNotaController extends Controller
                 }
             }
 
-            // 5a. Refrescar modelo y relaciones
             $nota->refresh()->load('dimensiones');
+
+            // 🔒 Log de actualización
+            ActividadSistema::create([
+                'usuario_id' => $user->id_user,
+                'accion' => 'actualizar',
+                'modulo' => 'notas',
+                'descripcion' => "Actualizó nota del estudiante {$request->estudiante_id}, materia {$request->materia_id}, periodo {$request->numero_periodo}",
+                'ip' => $request->ip(),
+                'navegador' => $request->userAgent(),
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -80,7 +83,6 @@ class CrearNotaController extends Controller
             ], 200);
 
         } else {
-            // 4b. Creación
             $nota = new Nota([
                 'estudiantes_id_estudiante' => $request->estudiante_id,
                 'materias_id_materia'       => $request->materia_id,
@@ -105,8 +107,17 @@ class CrearNotaController extends Controller
                 }
             }
 
-            // 5b. Refrescar modelo y relaciones
             $nota->refresh()->load('dimensiones');
+
+            // 🔒 Log de creación
+            ActividadSistema::create([
+                'usuario_id' => $user->id_user,
+                'accion' => 'crear',
+                'modulo' => 'notas',
+                'descripcion' => "Registró nota para estudiante {$request->estudiante_id}, materia {$request->materia_id}, periodo {$request->numero_periodo}",
+                'ip' => $request->ip(),
+                'navegador' => $request->userAgent(),
+            ]);
 
             return response()->json([
                 'success' => true,

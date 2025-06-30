@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ActividadSistema;
 
 class AuthController extends Controller
 {
@@ -20,6 +21,18 @@ class AuthController extends Controller
                 'message' => 'Credenciales incorrectas'
             ], 401);
         }
+
+        $user = Auth::guard('api')->user();
+
+        // Registrar log de inicio de sesión exitoso
+        ActividadSistema::create([
+            'usuario_id' => $user->id_user,
+            'accion' => 'login',
+            'modulo' => 'auth',
+            'descripcion' => 'Inicio de sesión exitoso',
+            'ip' => $request->ip(),
+            'navegador' => $request->userAgent(),
+        ]);
 
         return response()->json([
             'success' => true,

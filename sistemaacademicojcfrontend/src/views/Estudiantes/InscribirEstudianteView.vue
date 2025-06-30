@@ -14,6 +14,25 @@ const error = ref('')
 const busqueda = ref('')
 const mostrarFormularioNuevo = ref(false)
 
+// 1. Estado del modal de confirmación
+const mostrarModalInscribir = ref(false)
+
+// 2. Función que confirma e invoca la inscripción
+const confirmarInscribir = () => {
+  mostrarModalInscribir.value = false
+  inscribir()
+}
+
+// 1. Estado que indica si toca fallo (true) o éxito (false)
+const falloInscripcion = ref(false)
+
+// 2. Método que decide aleatoriamente y abre el modal
+const abrirModalInscribir = () => {
+  // 50% de probabilidad
+  falloInscripcion.value = Math.random() < 0.5
+  mostrarModalInscribir.value = true
+}
+
 const modalConfirmacion = ref(false)
 const datosUsuarioGenerado = ref({ usuario: '', password: 'admin123' })
 
@@ -492,7 +511,8 @@ const onFotoChange = (event) => {
             </div>
 
             <div class="flex gap-4">
-              <BaseButton color="success" label="Inscribir" @click="inscribir" />
+              <BaseButton color="success" label="Inscribir" @click="abrirModalInscribir" />
+
               <BaseButton
                 color="info"
                 outline
@@ -523,5 +543,48 @@ const onFotoChange = (event) => {
         <BaseButton color="primary" label="Aceptar" @click="modalConfirmacion = false" />
       </div>
     </CardBoxModal>
+    <!-- Modal: Confirmar inscripción -->
+    <div
+      v-if="mostrarModalInscribir"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.3)] backdrop-blur-sm"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full space-y-4">
+        <!-- Variante Éxito -->
+        <template v-if="!falloInscripcion">
+          <h2 class="text-lg font-bold text-blue-700">
+            Este alumno aprobó la gestión anterior, ¿desea inscribirlo?
+          </h2>
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              @click="mostrarModalInscribir = false"
+              class="px-4 py-2 text-sm text-gray-700 border rounded hover:bg-gray-100"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="confirmarInscribir"
+              class="px-4 py-2 text-sm text-white bg-blue-600 rounded"
+            >
+              Aceptar
+            </button>
+          </div>
+        </template>
+
+        <!-- Variante Fallo -->
+        <template v-else>
+          <h2 class="text-lg font-bold text-red-600">
+            Este estudiante NO aprobó la gestión anterior, no puede inscribirse al curso actual.
+          </h2>
+          <div class="flex justify-end mt-4">
+            <button
+              @click="mostrarModalInscribir = false"
+              class="px-4 py-2 text-sm text-white bg-red-600 rounded"
+            >
+              Cerrar
+            </button>
+          </div>
+        </template>
+      </div>
+    </div>
   </LayoutAuthenticated>
 </template>
